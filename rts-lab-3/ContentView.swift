@@ -13,6 +13,8 @@ struct ContentView: View {
     @StateObject
     var viewModel = FermatViewModel()
     
+    @State var alertIsPresented = false
+    
     var body: some View {
         ZStack {
             Color.blue.edgesIgnoringSafeArea(.all)
@@ -29,6 +31,13 @@ struct ContentView: View {
                     .numberStyle()
             }
             .padding()
+        }
+        .onReceive(viewModel.$error) {_ in
+            alertIsPresented = viewModel.error != nil
+        }
+        .alert(isPresented: $alertIsPresented) {
+            Alert(title: Text("Error"),
+                  message: Text(viewModel.error ?? ""))
         }
     }
     
@@ -52,6 +61,7 @@ final public class FermatViewModel: ObservableObject {
     
     @Published var input = "1"
     @Published var result = [Int]()
+    @Published var error: String?
     
     var cancellable = Set<AnyCancellable>()
     
@@ -134,6 +144,13 @@ private extension FermatViewModel {
             .sink { [weak self] input in
                 guard let self = self else {
                     return
+                }
+                
+                if input.count >= 10 {
+                    self.error = "Number is too big"
+                    return
+                } else {
+                    self.error = nil
                 }
                 
                 let filtered = input.filter { "0123456789".contains($0) }
